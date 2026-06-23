@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+venv/
+.venv/
+env/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Zmienne środowiskowe (wrażliwe dane / klucze API)
+.env
+.env.local
+.env.*.local
+
+# Node / frontend
+node_modules/
+dist/
+.cache/
+*.local
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.suo
+*.user
+
+# System
+.DS_Store
+Thumbs.db
+
+# Claude Code — ustawienia lokalne (osobiste, nie współdzielone)
+.claude/settings.local.json
