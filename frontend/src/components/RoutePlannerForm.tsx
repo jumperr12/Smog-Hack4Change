@@ -1,14 +1,7 @@
 import { useEffect, useState } from "react";
 import { pobierzTrybyTransportu } from "../api/client";
 import type { GeoPoint, RouteRequest, TransportMode } from "../api/types";
-
-// Presety Trójmiasta do szybkiego testowania
-const PRESETY_TROJMIASTO: Record<string, GeoPoint> = {
-  "Gdańsk Główny": { lat: 54.3561, lon: 18.6444 },
-  "Gdynia Główna": { lat: 54.5189, lon: 18.5319 },
-  "Sopot": { lat: 54.4418, lon: 18.5601 },
-  "Gdańsk Wrzeszcz": { lat: 54.3794, lon: 18.6094 },
-};
+import { AddressSearch } from "./AddressSearch";
 
 interface Props {
   onSubmit: (zapytanie: RouteRequest) => void;
@@ -16,10 +9,8 @@ interface Props {
 }
 
 export function RoutePlannerForm({ onSubmit, ladowanie }: Props) {
-  const [startLat, ustawStartLat] = useState("54.3561");
-  const [startLon, ustawStartLon] = useState("18.6444");
-  const [endLat, ustawEndLat] = useState("54.5189");
-  const [endLon, ustawEndLon] = useState("18.5319");
+  const [punktStart, ustawPunktStart] = useState<GeoPoint | null>({ lat: 54.3561, lon: 18.6444 });
+  const [punktKoniec, ustawPunktKoniec] = useState<GeoPoint | null>({ lat: 54.5189, lon: 18.5319 });
   const [tryb, ustawTryb] = useState<TransportMode>("walking");
   const [wagaZanieczyszczenia, ustawWageZanieczyszczenia] = useState(0.5);
   const [dostepneTryby, ustawDostepneTryby] = useState<TransportMode[]>([]);
@@ -27,29 +18,15 @@ export function RoutePlannerForm({ onSubmit, ladowanie }: Props) {
   useEffect(() => {
     pobierzTrybyTransportu()
       .then(ustawDostepneTryby)
-      .catch(() => {
-        // Fallback gdy backend niedostępny
-        ustawDostepneTryby(["walking", "cycling"]);
-      });
+      .catch(() => ustawDostepneTryby(["walking", "cycling"]));
   }, []);
-
-  function ustawPreset(klucz: string, cel: "start" | "end") {
-    const punkt = PRESETY_TROJMIASTO[klucz];
-    if (!punkt) return;
-    if (cel === "start") {
-      ustawStartLat(String(punkt.lat));
-      ustawStartLon(String(punkt.lon));
-    } else {
-      ustawEndLat(String(punkt.lat));
-      ustawEndLon(String(punkt.lon));
-    }
-  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!punktStart || !punktKoniec) return;
     onSubmit({
-      start: { lat: parseFloat(startLat), lon: parseFloat(startLon) },
-      end: { lat: parseFloat(endLat), lon: parseFloat(endLon) },
+      start: punktStart,
+      end: punktKoniec,
       mode: tryb,
       pollution_weight: wagaZanieczyszczenia,
       alternatives: 3,
@@ -61,37 +38,21 @@ export function RoutePlannerForm({ onSubmit, ladowanie }: Props) {
     cycling: "Rowerem",
   };
 
+  const moznaWyslac = punktStart !== null && punktKoniec !== null && !ladowanie;
+
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <fieldset>
-        <legend>Punkt startowy A</legend>
-        <select onChange={(e) => ustawPreset(e.target.value, "start")}>
-          <option value="">— wybierz preset —</option>
-          {Object.keys(PRESETY_TROJMIASTO).map((nazwa) => (
-            <option key={nazwa} value={nazwa}>{nazwa}</option>
-          ))}
-        </select>
-        <div style={{ marginTop: 4 }}>
-          <label>Szerokość: <input value={startLat} onChange={(e) => ustawStartLat(e.target.value)} style={{ width: 100 }} /></label>
-          {" "}
-          <label>Długość: <input value={startLon} onChange={(e) => ustawStartLon(e.target.value)} style={{ width: 100 }} /></label>
-        </div>
-      </fieldset>
+      <AddressSearch
+        label="Punkt startowy A"
+        wartoscPoczatkowa="Gdańsk Główny"
+        onWybierz={(punkt) => ustawPunktStart(punkt)}
+      />
 
-      <fieldset>
-        <legend>Punkt docelowy B</legend>
-        <select onChange={(e) => ustawPreset(e.target.value, "end")}>
-          <option value="">— wybierz preset —</option>
-          {Object.keys(PRESETY_TROJMIASTO).map((nazwa) => (
-            <option key={nazwa} value={nazwa}>{nazwa}</option>
-          ))}
-        </select>
-        <div style={{ marginTop: 4 }}>
-          <label>Szerokość: <input value={endLat} onChange={(e) => ustawEndLat(e.target.value)} style={{ width: 100 }} /></label>
-          {" "}
-          <label>Długość: <input value={endLon} onChange={(e) => ustawEndLon(e.target.value)} style={{ width: 100 }} /></label>
-        </div>
-      </fieldset>
+      <AddressSearch
+        label="Punkt docelowy B"
+        wartoscPoczatkowa="Gdynia Główna"
+        onWybierz={(punkt) => ustawPunktKoniec(punkt)}
+      />
 
       <div>
         <label>Środek transportu: </label>
@@ -119,9 +80,15 @@ export function RoutePlannerForm({ onSubmit, ladowanie }: Props) {
         </label>
       </div>
 
-      <button type="submit" disabled={ladowanie}>
+      <button type="submit" disabled={!moznaWyslac}>
         {ladowanie ? "Szukam…" : "Szukaj trasy"}
       </button>
+
+      {(!punktStart || !punktKoniec) && (
+        <p style={{ color: "#888", fontSize: 13, margin: 0 }}>
+          Wybierz punkt startowy i docelowy z listy podpowiedzi.
+        </p>
+      )}
     </form>
   );
 }
