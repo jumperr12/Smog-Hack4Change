@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     ors_alternative_routes_count: int = 3
 
     # GIOŚ — base URL konfigurowalne żeby łatwo przejść z /rest na /v1/rest gdy stara wersja zostanie wyłączona
-    gios_base_url: str = "https://api.gios.gov.pl/pjp-api/rest"
+    gios_base_url: str = "https://api.gios.gov.pl/pjp-api/v1/rest"
 
     # TTL cache w sekundach
     cache_ttl_stacje: int = 86_400   # 24h — stacje rzadko się zmieniają
