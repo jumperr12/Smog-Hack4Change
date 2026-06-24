@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -7,13 +8,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.routes_air import router as router_jakosci
 from .api.routes_routing import router as router_tras
 from .api.ws import router as router_ws
+from .config import settings
 from .core.optimizer import RouteOptimizer
 from .providers.registry import zbuduj_provider_jakosci, zbuduj_provider_tras
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Inicjalizacja providerów i optymalizatora przy starcie serwera
+    if not settings.ors_api_key:
+        logger.warning("ORS_API_KEY jest pusty — wyznaczanie tras nie będzie działać")
+
     app.state.provider_jakosci = zbuduj_provider_jakosci()
     app.state.provider_tras = zbuduj_provider_tras()
     app.state.optimizer = RouteOptimizer(
