@@ -3,6 +3,8 @@ from ..config import settings
 from .air_quality.base import AirQualityProvider
 from .air_quality.gios.client import GiosHttpClient
 from .air_quality.gios.provider import GiosAirQualityProvider
+from .air_quality.openmeteo.client import OpenMeteoHttpClient
+from .air_quality.openmeteo.provider import OpenMeteoAirQualityProvider
 from .routing.base import RoutingProvider
 from .routing.openrouteservice.client import OpenRouteServiceHttpClient
 from .routing.openrouteservice.provider import OpenRouteServiceProvider
@@ -22,9 +24,13 @@ def zbuduj_provider_jakosci() -> AirQualityProvider:
         klient = GiosHttpClient(settings.gios_base_url)
         return GiosAirQualityProvider(klient, _cache)
 
+    if nazwa == "openmeteo":
+        klient_om = OpenMeteoHttpClient(settings.openmeteo_base_url)
+        return OpenMeteoAirQualityProvider(klient_om, _cache)
+
     raise ValueError(
         f"Nieznany provider jakości powietrza: '{nazwa}'. "
-        f"Dostępne: 'gios'"
+        f"Dostępne: 'gios', 'openmeteo'"
     )
 
 

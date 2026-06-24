@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     # GIOŚ — base URL konfigurowalne żeby łatwo przejść z /rest na /v1/rest gdy stara wersja zostanie wyłączona
     gios_base_url: str = "https://api.gios.gov.pl/pjp-api/v1/rest"
 
+    # Open-Meteo Air Quality — model CAMS (~11 km), bez klucza, działa dla dowolnego punktu
+    openmeteo_base_url: str = "https://air-quality-api.open-meteo.com/v1/air-quality"
+
     # TTL cache w sekundach
     cache_ttl_stacje: int = 86_400   # 24h — stacje rzadko się zmieniają
     cache_ttl_pomiary: int = 3_600   # 1h — pomiary odświeżane co godzinę
