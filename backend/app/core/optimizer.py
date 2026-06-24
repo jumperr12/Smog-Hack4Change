@@ -32,7 +32,11 @@ class RouteOptimizer:
         if not kandydaci:
             return RouteResponse(request=zapytanie, candidates=[], recommended_index=None)
 
-        probki = await self.provider_jakosci.get_samples_near(zapytanie.start, zapytanie.end)
+        try:
+            probki = await self.provider_jakosci.get_samples_near(zapytanie.start, zapytanie.end)
+        except Exception:
+            # Gdy GIOŚ jest niedostępny — trasy zwracamy bez danych o smogu
+            probki = []
 
         sampler = PollutionSampler(
             probki_stacji=probki,
