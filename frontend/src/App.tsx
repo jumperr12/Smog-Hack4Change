@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { pobierzStacje } from "./api/client";
-import type { Station } from "./api/types";
+import type { RouteRequest, Station } from "./api/types";
 import { MapPlaceholder } from "./components/MapPlaceholder";
 import { RoutePlannerForm } from "./components/RoutePlannerForm";
 import { RouteResults } from "./components/RouteResults";
@@ -9,13 +9,31 @@ import { useRouteOptimizer } from "./hooks/useRouteOptimizer";
 export function App() {
   const { wynik, ladowanie, blad, szukajTrasy } = useRouteOptimizer();
   const [stacje, ustawStacje] = useState<Station[]>([]);
+  const [wybranyIndeks, ustawWybranyIndeks] = useState<number | null>(null);
 
   useEffect(() => {
     pobierzStacje()
       .then(ustawStacje)
-      .catch(() => {
-        // Stacje wyświetlane na mapie — brak nie blokuje reszty funkcji
-      });
+      .catch(() => {});
+  }, []);
+
+  // Po nowym wyszukiwaniu ustaw rekomendowaną jako domyślnie wybraną
+  useEffect(() => {
+    if (wynik) {
+      ustawWybranyIndeks(wynik.recommended_index ?? 0);
+    }
+  }, [wynik]);
+
+  const handleSzukaj = useCallback(
+    (zapytanie: RouteRequest) => {
+      ustawWybranyIndeks(null);
+      szukajTrasy(zapytanie);
+    },
+    [szukajTrasy]
+  );
+
+  const handleWybierzTrase = useCallback((indeks: number) => {
+    ustawWybranyIndeks(indeks);
   }, []);
 
   return (
@@ -25,12 +43,14 @@ export function App() {
         Wyznacza trasę z punktu A do B uwzględniając zanieczyszczenie powietrza — Trójmiasto
       </p>
 
-      <RoutePlannerForm onSubmit={szukajTrasy} ladowanie={ladowanie} />
+      <RoutePlannerForm onSubmit={handleSzukaj} ladowanie={ladowanie} />
 
       <div style={{ marginTop: 24 }}>
         <MapPlaceholder
           kandydaci={wynik?.candidates ?? []}
           stacje={stacje}
+          wybranyIndeks={wybranyIndeks}
+          onWybierzTrase={handleWybierzTrase}
         />
       </div>
 
@@ -42,7 +62,11 @@ export function App() {
 
       {wynik && (
         <div style={{ marginTop: 24 }}>
-          <RouteResults kandydaci={wynik.candidates} />
+          <RouteResults
+            kandydaci={wynik.candidates}
+            wybranyIndeks={wybranyIndeks}
+            onWybierz={handleWybierzTrase}
+          />
         </div>
       )}
     </div>
