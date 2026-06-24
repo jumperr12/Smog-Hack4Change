@@ -8,12 +8,12 @@ from ....models.air_quality import AirQualitySample, Station
 from ....models.geo import BBox, GeoPoint
 from ..base import AirQualityProvider
 from .client import GiosHttpClient
-from .mapping import znajdz_sensor_pm, mapuj_probke, mapuj_stacje
+from .mapping import _wyciagnij_liste, znajdz_sensor_pm, mapuj_probke, mapuj_stacje
 
 
 class GiosAirQualityProvider(AirQualityProvider):
     """
-    Provider danych o jakości powietrza oparty o API GIOŚ.
+    Provider danych o jakości powietrza oparty o API GIOŚ (v1/rest).
     Oficjalne polskie API — bez klucza, bezpłatne.
     """
 
@@ -27,8 +27,9 @@ class GiosAirQualityProvider(AirQualityProvider):
         if zapisane is not None:
             return zapisane
 
-        surowe = await self.klient.pobierz_wszystkie_stacje()
-        wszystkie_stacje = [mapuj_stacje(s) for s in surowe]
+        odpowiedz = await self.klient.pobierz_wszystkie_stacje()
+        lista_surowa = _wyciagnij_liste(odpowiedz)
+        wszystkie_stacje = [mapuj_stacje(s) for s in lista_surowa]
 
         stacje_w_obszarze = [
             s for s in wszystkie_stacje
@@ -46,13 +47,14 @@ class GiosAirQualityProvider(AirQualityProvider):
             return zapisana
 
         try:
-            sensory = await self.klient.pobierz_sensory_stacji(stacja.id)
-            id_sensora = znajdz_sensor_pm(sensory)
-            if id_sensora is None:
+            odpowiedz_sensorow = await self.klient.pobierz_sensory_stacji(stacja.id)
+            wynik_sensora = znajdz_sensor_pm(odpowiedz_sensorow)
+            if wynik_sensora is None:
                 return None
 
+            id_sensora, czy_pm25 = wynik_sensora
             dane = await self.klient.pobierz_dane_sensora(id_sensora)
-            probka = mapuj_probke(stacja, dane)
+            probka = mapuj_probke(stacja, dane, czy_pm25)
 
             if probka is not None:
                 self.cache.set(klucz, probka, settings.cache_ttl_pomiary)
